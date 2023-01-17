@@ -16,6 +16,7 @@ use hyperlane_ethereum::{
     self as h_eth, BuildableWithProvider, EthereumInterchainGasPaymasterAbi, EthereumMailboxAbi,
 };
 use hyperlane_fuel::{self as h_fuel, prelude::*};
+use hyperlane_sealevel as h_sealevel;
 
 use crate::settings::signers::BuildableWithSignerConf;
 use crate::{CoreMetrics, SignerConf};
@@ -30,6 +31,8 @@ pub enum ChainConf {
     Ethereum(h_eth::ConnectionConf),
     /// Fuel configuration
     Fuel(h_fuel::ConnectionConf),
+    /// Sealevel configuration.
+    Sealevel(h_sealevel::ConnectionConf),
 }
 
 impl ChainConf {
@@ -37,6 +40,7 @@ impl ChainConf {
         match self {
             ChainConf::Ethereum(_) => HyperlaneDomainProtocol::Ethereum,
             ChainConf::Fuel(_) => HyperlaneDomainProtocol::Fuel,
+            ChainConf::Sealevel(_) => HyperlaneDomainProtocol::Sealevel,
         }
     }
 }
@@ -151,6 +155,7 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
+            ChainConf::Sealevel(_) => todo!(),
         }
         .context("Building provider")
     }
@@ -168,6 +173,11 @@ impl ChainSetup {
             ChainConf::Fuel(conf) => {
                 let wallet = self.fuel_signer().await?;
                 hyperlane_fuel::FuelMailbox::new(conf, locator, wallet)
+                    .map(|m| Box::new(m) as Box<dyn Mailbox>)
+                    .map_err(Into::into)
+            }
+            ChainConf::Sealevel(conf) => {
+                h_sealevel::SealevelMailbox::new(conf, locator)
                     .map(|m| Box::new(m) as Box<dyn Mailbox>)
                     .map_err(Into::into)
             }
@@ -196,6 +206,7 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
+            ChainConf::Sealevel(_) => todo!(),
         }
         .context("Building mailbox indexer")
     }
@@ -220,6 +231,7 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
+            ChainConf::Sealevel(_) => todo!(),
         }
         .context("Building IGP")
     }
@@ -246,6 +258,7 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
+            ChainConf::Sealevel(_) => todo!(),
         }
         .context("Building IGP indexer")
     }
@@ -268,6 +281,7 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
+            ChainConf::Sealevel(_) => todo!(),
         }
         .context("Building multisig ISM")
     }
@@ -358,6 +372,8 @@ impl ChainSetup {
                 .parse::<fuels::tx::ContractId>()
                 .map_err(|e| eyre!("Invalid fuel contract id: {e}"))?
                 .into_h256(),
+            // FIXME parse solana pubkey
+            ChainConf::Sealevel(_) => todo!(),
         };
 
         Ok(ContractLocator { domain, address })
