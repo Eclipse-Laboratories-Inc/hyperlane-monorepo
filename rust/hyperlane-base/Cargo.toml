@@ -20,7 +20,7 @@ eyre = "0.6"
 color-eyre = { version = "0.6", optional = true }
 tracing = "0.1"
 tracing-futures = "0.2"
-tracing-subscriber = { version = "0.3", features = ["json"] }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 rocksdb = "0.18"
 mockall = "0.11"
 

@@ -1,6 +1,6 @@
 use eyre::Result;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{filter::LevelFilter, prelude::*};
+use tracing_subscriber::{EnvFilter, filter::LevelFilter, prelude::*};
 
 use crate::settings::trace::fmt::Style;
 
@@ -69,6 +69,7 @@ impl From<Level> for LevelFilter {
 pub struct TracingConfig {
     jaeger: Option<JaegerConfig>,
     zipkin: Option<ZipkinConfig>,
+    console: Option<()>,
     #[serde(default)]
     fmt: Style,
     #[serde(default)]
@@ -80,6 +81,7 @@ impl Default for TracingConfig {
         Self {
             jaeger: None,
             zipkin: None,
+            console: None,
             fmt: Style::Pretty,
             level: Level::Trace,
         }
@@ -108,7 +110,16 @@ impl TracingConfig {
             subscriber.with(layer).try_init()?;
             return Ok(());
         }
+        // FIXME based on the return early logic, these should be an enum...
+        if let Some(_) = &self.console {
+            subscriber
+                .with(tracing_subscriber::fmt::layer())
+                .with(EnvFilter::from_default_env())
+                .try_init()?;
+                return Ok(());
+        }
         subscriber.try_init()?;
+
         Ok(())
     }
 }
