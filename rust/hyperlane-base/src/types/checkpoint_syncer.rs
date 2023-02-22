@@ -64,6 +64,7 @@ impl MultisigCheckpointSyncerConf {
         for (key, value) in self.checkpointsyncers.iter() {
             let gauge =
                 validator_checkpoint_index.with_label_values(&[origin, &key.to_lowercase()]);
+            // FIXME we can't use 20 byte wallet address here for sealevel (32 bytes)
             checkpoint_syncers.insert(Address::from_str(key)?, value.build(Some(gauge))?.into());
         }
         Ok(MultisigCheckpointSyncer::new(checkpoint_syncers))
