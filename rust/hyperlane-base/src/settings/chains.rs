@@ -206,7 +206,10 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
-            ChainConf::Sealevel(_) => todo!(),
+            ChainConf::Sealevel(conf) => {
+                let indexer = Box::new(h_sealevel::SealevelMailboxIndexer::new(conf, locator));
+                Ok(indexer as Box<dyn MailboxIndexer>)
+            }
         }
         .context("Building mailbox indexer")
     }
@@ -231,7 +234,11 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
-            ChainConf::Sealevel(_) => todo!(),
+            ChainConf::Sealevel(conf) => {
+                let paymaster =
+                    Box::new(h_sealevel::SealevelInterchainGasPaymaster::new(conf, locator));
+                Ok(paymaster as Box<dyn InterchainGasPaymaster>)
+            }
         }
         .context("Building IGP")
     }
@@ -258,7 +265,11 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
-            ChainConf::Sealevel(_) => todo!(),
+            ChainConf::Sealevel(conf) => {
+                let indexer =
+                    Box::new(h_sealevel::SealevelInterchainGasPaymasterIndexer::new(conf, locator));
+                Ok(indexer as Box<dyn InterchainGasPaymasterIndexer>)
+            }
         }
         .context("Building IGP indexer")
     }
@@ -281,7 +292,10 @@ impl ChainSetup {
             }
 
             ChainConf::Fuel(_) => todo!(),
-            ChainConf::Sealevel(_) => todo!(),
+            ChainConf::Sealevel(conf) => {
+                let ism = Box::new(h_sealevel::SealevelMultisigIsm::new(conf, locator));
+                Ok(ism as Box<dyn MultisigIsm>)
+            },
         }
         .context("Building multisig ISM")
     }
@@ -372,8 +386,10 @@ impl ChainSetup {
                 .parse::<fuels::tx::ContractId>()
                 .map_err(|e| eyre!("Invalid fuel contract id: {e}"))?
                 .into_h256(),
-            // FIXME parse solana pubkey
-            ChainConf::Sealevel(_) => todo!(),
+            ChainConf::Sealevel(_) => address
+                .parse::<h_sealevel::solana::pubkey::Pubkey>()
+                .map_err(|err| eyre!("Invalid sealevel program address: {err}"))
+                .map(|pubkey| H256::from(pubkey.to_bytes()))?
         };
 
         Ok(ContractLocator { domain, address })
