@@ -121,6 +121,7 @@ impl HyperlaneMessage {
         H256::from_slice(Keccak256::new().chain(self.to_vec()).finalize().as_slice())
     }
 
+/* FIXME don't need?
     /// Formats a hyperlane message as a sealevel vm log "event".
     pub fn format(&self) -> Result<String, HyperlaneProtocolError> {
         let mut serialized = vec![];
@@ -139,6 +140,7 @@ impl HyperlaneMessage {
         })?;
         Self::read_from(&mut std::io::Cursor::new(decoded))
     }
+*/
 }
 
 impl std::fmt::Display for HyperlaneMessage {
