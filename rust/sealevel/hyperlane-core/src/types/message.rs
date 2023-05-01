@@ -122,24 +122,6 @@ impl HyperlaneMessage {
     pub fn id(&self) -> H256 {
         H256::from_slice(Keccak256::new().chain(&self.to_vec()).finalize().as_slice())
     }
-
-/* FIXME don't need?
-    // Intnded for sealevel vm "event" (log message).
-    pub fn format(&self) -> Result<String, HyperlaneError> {
-        let mut serialized = vec![];
-        self.write_to(&mut serialized)?;
-        let encoded = bs58::encode(serialized).into_string();
-        Ok(encoded)
-    }
-
-    // Intended for sealevel vm "event" (log message).
-    pub fn parse(formatted: &[u8]) -> Result<Self, HyperlaneError> {
-        let decoded = bs58::decode(formatted).into_vec().map_err(|err| {
-            HyperlaneError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
-        })?;
-        Self::read_from(&mut std::io::Cursor::new(decoded))
-    }
-*/
 }
 
 impl std::fmt::Display for HyperlaneMessage {

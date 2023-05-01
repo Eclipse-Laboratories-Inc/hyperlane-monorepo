@@ -1,8 +1,6 @@
-use std::str::FromStr as _;
-
 use async_trait::async_trait;
 use hyperlane_core::{
-    accumulator::merkle::Proof, ChainCommunicationError, ChainResult, ContractLocator, HyperlaneChain,
+    accumulator::merkle::Proof, ChainResult, ContractLocator, HyperlaneChain,
     HyperlaneContract, HyperlaneDomain, HyperlaneMessage, MultisigIsm, MultisigSignedCheckpoint,
     H256,
 };
@@ -15,17 +13,22 @@ use crate::{ConnectionConf, solana::pubkey::Pubkey};
 pub struct SealevelMultisigIsm {
     program_id: Pubkey,
     domain: HyperlaneDomain,
+    validator_addresses: Vec<H256>
 }
 
 impl SealevelMultisigIsm {
-    pub fn new(_conf: &ConnectionConf, locator: ContractLocator) -> Self {
+    pub fn new(conf: &ConnectionConf, locator: ContractLocator) -> Self {
         // let rpc_client = RpcClient::new(conf.url.clone());
         let program_id = Pubkey::from(<[u8; 32]>::from(locator.address));
         let domain = locator.domain;
+        let validator_addresses = vec![
+            conf.sealevel.multisig_ism_validator_address.to_bytes().into(),
+        ];
 
         Self {
             program_id,
             domain,
+            validator_addresses,
         }
     }
 }
@@ -49,12 +52,7 @@ impl MultisigIsm for SealevelMultisigIsm {
         &self,
         _message: &HyperlaneMessage,
     ) -> ChainResult<(Vec<H256>, u8)> {
-        // FIXME get the validator set from the ISM contract
-        warn!("Providing a single hardcoded validator and threshold of 1 for multisig ism");
-        let address = H256::from_str(
-            "0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"
-        ).map_err(ChainCommunicationError::from_other)?;
-        Ok((vec![address], 1))
+        Ok((self.validator_addresses.clone(), self.validator_addresses.len().try_into().unwrap()))
     }
 
     /// Returns the metadata needed by the contract's verify function

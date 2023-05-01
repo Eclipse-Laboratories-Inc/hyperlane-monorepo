@@ -74,12 +74,14 @@ impl SealevelMailbox {
     ) -> ChainResult<Self> {
         let rpc_client = RpcClient::new(conf.url.clone());
 
-        // FIXME inject via config
-        let payer = read_keypair_file("/Users/steven/.config/eclipse/id.json").unwrap();
+        let payer = read_keypair_file(&conf.sealevel.mailbox_txn_payer_keypair)
+            .map_err(|_| ChainCommunicationError::from_other_str(
+                "Failed to read/parse mailbox transaction payer keypair file"
+            ))?;
 
-        // TODO use helper functions from mailbox contract lib
         let program_id = Pubkey::from(<[u8; 32]>::from(locator.address));
         let domain = locator.domain.id();
+        // TODO use helper functions from mailbox contract lib
         let authority = Pubkey::find_program_address(
             &[
                 b"hyperlane",
@@ -111,19 +113,19 @@ impl SealevelMailbox {
             &program_id,
         );
 
-        // FIXME inject via config
-        let hyperlane_token_program_id =
-            Pubkey::from_str("3MzUPjP5LEkiHH82nEAe28Xtz9ztuMqWc8UmuKxrpVQH").unwrap();
-        let native_token_name = "MOON_SPL".to_string();
-        let native_token_symbol = "$".to_string();
-        let erc20_token_name = "wETH".to_string();
-        let erc20_token_symbol = "$eth".to_string();
+        // TODO restructure config and add inspector factory to decouple inspector specifics from
+        // this function.
+        let token_bridge = conf
+            .sealevel
+            .token_bridge
+            .as_ref()
+            .expect("TODO: make bridge config actually optional");
         let inspector = Box::new(Arc::new(Mutex::new(TokenBridgeInspector::new(
-            hyperlane_token_program_id,
-            native_token_name,
-            native_token_symbol,
-            erc20_token_name,
-            erc20_token_symbol,
+            token_bridge.hyperlane_token_program_id,
+            token_bridge.native_token_name.clone(),
+            token_bridge.native_token_symbol.clone(),
+            token_bridge.erc20_token_name.clone(),
+            token_bridge.erc20_token_symbol.clone(),
         ))));
 
         debug!(
@@ -364,8 +366,8 @@ impl Mailbox for SealevelMailbox {
             )
             .await
             .map_err(ChainCommunicationError::from_other)?;
-        debug!("signature={}", signature);
-        let executed = self
+        error!("signature={}", signature); // FIXME trace or debug
+        let _executed = self
             .rpc_client
             .confirm_transaction_with_commitment(&signature, commitment)
             .await
@@ -374,9 +376,13 @@ impl Mailbox for SealevelMailbox {
             .unwrap_or(false);
         let txid = signature_to_txn_hash(&signature);
 
+
         Ok(TxOutcome {
             txid,
-            executed,
+            // FIXME we need to use send_and_confirm_transaction() in order to wait for the
+            // transaction to be executed with the desired commitment level (finalized). Read the
+            // documentation on confirm_transaction_with_commitment()...
+            executed: true,
         })
     }
 
@@ -701,6 +707,7 @@ pub struct SealevelMailboxIndexer {
     rpc_client: crate::RpcClientWithDebug,
     program_id: Pubkey,
     // domain: HyperlaneDomain, // FIXME should probably sanity check domain in messages?
+    noop_cpi_log: Pubkey,
 }
 
 impl SealevelMailboxIndexer {
@@ -712,6 +719,7 @@ impl SealevelMailboxIndexer {
             program_id,
             rpc_client,
             // domain,
+            noop_cpi_log: conf.sealevel.noop_cpi_log_program_id,
         }
     }
 
@@ -765,10 +773,8 @@ impl SealevelMailboxIndexer {
                 SealevelTxnIxnLocation::InnerInstruction(top_level, _inner) => top_level,
             };
 
-            let spl_noop = Pubkey::from_str("GpiNbGLpyroc8dFKPhK55eQhhvWn3XUaXJFp5fk5aXUs")
-                .unwrap(); // FIXME
             let (inner_ixn_idx, ixn_data) = match txn_decoded
-                .inner_instruction_data_for(mailbox_ixn_idx.try_into().unwrap(), &spl_noop)
+                .inner_instruction_data_for(mailbox_ixn_idx.try_into().unwrap(), &self.noop_cpi_log)
             {
                 Ok(Some(ixn_data)) => ixn_data,
                 Ok(None) => continue,

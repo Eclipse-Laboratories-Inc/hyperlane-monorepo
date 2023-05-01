@@ -13,7 +13,19 @@
       "finalityBlocks": "0",
       "connection": {
         "type": "http",
-        "url": "http://127.0.0.1:8899"
+        "url": "http://127.0.0.1:8899",
+        "sealevel": {
+            "mailbox_txn_payer_keypair": "/Users/steven/.config/eclipse/id.json",
+            "multisig_ism_validator_address": "6JcBS4S8P8PdL84yoHYd2WpNhTxYFmRChxHMhFwHZULH",
+            "noop_cpi_log_program_id": "GpiNbGLpyroc8dFKPhK55eQhhvWn3XUaXJFp5fk5aXUs",
+            "token_bridge": {
+                "hyperlane_token_program_id": "3MzUPjP5LEkiHH82nEAe28Xtz9ztuMqWc8UmuKxrpVQH",
+                "native_token_name": "MOON",
+                "native_token_symbol": "$",
+                "erc20_token_name": "wETH",
+                "erc20_token_symbol": "$eth"
+            }
+        }
       },
       "index": {
         "from": "1"
